@@ -1,9 +1,9 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
 import sqlite3
 from datetime import datetime
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='/static')
 DATABASE = 'bonos_simulaciones.db'
 
 # Inicializar base de datos
@@ -110,9 +110,13 @@ def obtener_historial(limite=50):
 
 @app.route('/')
 def index():
-    """Página principal"""
-    historial = obtener_historial()
-    return render_template('index.html', historial=historial)
+    """Página principal - Sirve la PWA desde la raíz"""
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'index.html', mimetype='text/html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    """Sirve archivos estáticos (manifest.json, sw.js, etc)"""
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)
 
 @app.route('/calcular', methods=['POST'])
 def calcular():

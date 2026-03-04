@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Calculadora Bonos">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23667eea' width='192' height='192'/><text x='96' y='120' font-size='80' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central'>💰</text></svg>">
     
     <style>
@@ -538,122 +538,211 @@
             document.getElementById('loading').style.display = 'block';
             document.getElementById('results').classList.remove('active');
 
-            fetch('/calcular', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    dolar_hoy: valorIndiceHoy,
-                    dolar_diciembre: valorIndiceProyectado,
-                    tir_pr17: tirBonoFijo,
-                    paridad_dual: paridadBonoIndexado,
-                    tir_adicional: tirAdicional
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => {
-                        throw new Error(err.error || 'Error en la solicitud');
-                    });
+            // Simular latencia de procesamiento (para que se vea real)
+            setTimeout(() => {
+                try {
+                    // LÓGICA DE CÁLCULO LOCAL (sin servidor)
+                    
+                    // 1. Ganancia por convergencia
+                    const gananciaPariedad = ((100 / paridadBonoIndexado) - 1) * 100;
+                    
+                    // 2. Variación del índice
+                    const variacionIndice = ((valorIndiceProyectado / valorIndiceHoy) - 1) * 100;
+                    
+                    // 3. Rendimiento Bono Indexado
+                    const rendBonoIndexado = variacionIndice + gananciaPariedad + tirAdicional;
+                    
+                    // 4. Rendimiento Bono Fijo
+                    const rendBonoFijo = tirBonoFijo;
+                    
+                    // 5. Break-even (despejando valorIndiceProyectado)
+                    const variacionNecesaria = (rendBonoFijo - gananciaPariedad - tirAdicional) / 100;
+                    const breakeven = valorIndiceHoy * (1 + variacionNecesaria);
+                    
+                    // Determinar cual es mejor
+                    const mejor = rendBonoFijo > rendBonoIndexado ? 'PR17' : 'Dual';
+                    
+                    // Preparar datos para guardar
+                    const simulacion = {
+                        fecha: new Date().toISOString(),
+                        valorIndiceHoy: valorIndiceHoy,
+                        valorIndiceProyectado: valorIndiceProyectado,
+                        tirBonoFijo: tirBonoFijo,
+                        paridadBonoIndexado: paridadBonoIndexado,
+                        tirAdicional: tirAdicional,
+                        rendBonoFijo: rendBonoFijo,
+                        rendBonoIndexado: rendBonoIndexado,
+                        mejor: mejor,
+                        breakeven: breakeven,
+                        variacionIndice: variacionIndice,
+                        gananciaPariedad: gananciaPariedad
+                    };
+                    
+                    // Guardar en localStorage
+                    guardarSimulacionLocal(simulacion);
+                    
+                    document.getElementById('loading').style.display = 'none';
+
+                    // Mostrar resultados en UI
+                    const mejorCard = document.getElementById('mejor-card');
+                    const peorCard = document.getElementById('peor-card');
+
+                    if (mejor === 'PR17') {
+                        mejorCard.classList.add('mejor');
+                        mejorCard.classList.remove('peor');
+                        peorCard.classList.remove('mejor');
+                        peorCard.classList.add('peor');
+
+                        document.getElementById('mejor-nombre').textContent = 'Bono Fijo ✓';
+                        document.getElementById('mejor-valor').textContent = rendBonoFijo.toFixed(2) + '%';
+                        document.getElementById('peor-nombre').textContent = 'Bono Indexado';
+                        document.getElementById('peor-valor').textContent = rendBonoIndexado.toFixed(2) + '%';
+                    } else {
+                        mejorCard.classList.remove('mejor');
+                        mejorCard.classList.add('peor');
+                        peorCard.classList.add('mejor');
+                        peorCard.classList.remove('peor');
+
+                        document.getElementById('mejor-nombre').textContent = 'Bono Indexado ✓';
+                        document.getElementById('mejor-valor').textContent = rendBonoIndexado.toFixed(2) + '%';
+                        document.getElementById('peor-nombre').textContent = 'Bono Fijo';
+                        document.getElementById('peor-valor').textContent = rendBonoFijo.toFixed(2) + '%';
+                    }
+
+                    document.getElementById('breakeven').textContent = breakeven.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('variacion').textContent = (variacionIndice > 0 ? '+' : '') + variacionIndice.toFixed(2) + '%';
+                    document.getElementById('ganancia-convergencia').textContent = gananciaPariedad.toFixed(2) + '%';
+
+                    document.getElementById('results').classList.add('active');
+                    mostrarExito('Simulación calculada y guardada');
+                    cargarHistorial();
+                } catch (error) {
+                    document.getElementById('loading').style.display = 'none';
+                    mostrarError('Error al calcular: ' + error.message);
+                    console.error(error);
                 }
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('loading').style.display = 'none';
+            }, 500);
+        }
 
-                // Actualizar resultados
-                const rendBonoFijo = data.rendimiento_pr17;
-                const rendBonoIndexado = data.rendimiento_dual;
-                const mejor = data.mejor_opcion;
-                const breakeven = data.breakeven_dolar;
-                const variacion = data.variacion_dolar;
-
-                // Calcular ganancia por convergencia
-                const gananciaPariedad = ((100 / paridadBonoIndexado) - 1) * 100;
-
-                // Mostrar comparación
-                const mejorCard = document.getElementById('mejor-card');
-                const peorCard = document.getElementById('peor-card');
-
-                if (mejor === 'PR17') {
-                    mejorCard.classList.add('mejor');
-                    mejorCard.classList.remove('peor');
-                    peorCard.classList.remove('mejor');
-                    peorCard.classList.add('peor');
-
-                    document.getElementById('mejor-nombre').textContent = 'Bono Fijo ✓';
-                    document.getElementById('mejor-valor').textContent = rendBonoFijo.toFixed(2) + '%';
-                    document.getElementById('peor-nombre').textContent = 'Bono Indexado';
-                    document.getElementById('peor-valor').textContent = rendBonoIndexado.toFixed(2) + '%';
-                } else {
-                    mejorCard.classList.remove('mejor');
-                    mejorCard.classList.add('peor');
-                    peorCard.classList.add('mejor');
-                    peorCard.classList.remove('peor');
-
-                    document.getElementById('mejor-nombre').textContent = 'Bono Indexado ✓';
-                    document.getElementById('mejor-valor').textContent = rendBonoIndexado.toFixed(2) + '%';
-                    document.getElementById('peor-nombre').textContent = 'Bono Fijo';
-                    document.getElementById('peor-valor').textContent = rendBonoFijo.toFixed(2) + '%';
+        function guardarSimulacionLocal(simulacion) {
+            try {
+                // Validar que la simulación tenga los campos requeridos
+                if (!simulacion || typeof simulacion !== 'object') {
+                    console.error('[LocalStorage] Simulación inválida:', simulacion);
+                    return;
                 }
-
-                document.getElementById('breakeven').textContent = breakeven.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                document.getElementById('variacion').textContent = (variacion > 0 ? '+' : '') + variacion.toFixed(2) + '%';
-                document.getElementById('ganancia-convergencia').textContent = gananciaPariedad.toFixed(2) + '%';
-
-                document.getElementById('results').classList.add('active');
-                mostrarExito('Simulación calculada y guardada');
-                cargarHistorial();
-            })
-            .catch(error => {
-                document.getElementById('loading').style.display = 'none';
-                mostrarError('Error: ' + error.message);
-            });
+                
+                let historial = [];
+                const historialJSON = localStorage.getItem('historial_bonos');
+                
+                // Intentar parsear el historial existente
+                if (historialJSON && historialJSON.trim() !== '') {
+                    try {
+                        historial = JSON.parse(historialJSON);
+                    } catch (parseError) {
+                        console.warn('[LocalStorage] Historial corrupto, iniciando de cero:', parseError);
+                        historial = [];
+                    }
+                }
+                
+                // Validar que sea un array
+                if (!Array.isArray(historial)) {
+                    historial = [];
+                }
+                
+                // Agregar nueva simulación al inicio
+                historial.unshift(simulacion);
+                
+                // Mantener máximo 100 simulaciones
+                if (historial.length > 100) {
+                    historial = historial.slice(0, 100);
+                }
+                
+                // Guardar de forma segura
+                try {
+                    localStorage.setItem('historial_bonos', JSON.stringify(historial));
+                    console.log('[LocalStorage] Simulación guardada correctamente. Total simulaciones:', historial.length);
+                } catch (storageError) {
+                    console.error('[LocalStorage] Error guardando en localStorage:', storageError);
+                    if (storageError.name === 'QuotaExceededError') {
+                        console.warn('[LocalStorage] Cuota excedida, limpiando datos antiguos...');
+                        historial = historial.slice(0, 50);
+                        localStorage.setItem('historial_bonos', JSON.stringify(historial));
+                    }
+                }
+            } catch (error) {
+                console.error('[LocalStorage] Error guardando simulación:', error);
+            }
         }
 
         function cargarHistorial() {
-            fetch('/historial')
-            .then(response => response.json())
-            .then(data => {
+            try {
+                const historialJSON = localStorage.getItem('historial_bonos');
+                
+                // Si no hay datos o está vacío, mostrar mensaje
+                if (!historialJSON || historialJSON.trim() === '') {
+                    const container = document.getElementById('historial-container');
+                    container.innerHTML = '<div class="card" style="text-align: center; color: #999;">Sin simulaciones aún</div>';
+                    return;
+                }
+                
+                // Parsear JSON de forma segura
+                let historial = [];
+                try {
+                    historial = JSON.parse(historialJSON);
+                } catch (parseError) {
+                    console.error('[LocalStorage] Error parseando JSON:', parseError);
+                    console.warn('[LocalStorage] Contenido corrupto:', historialJSON.substring(0, 100));
+                    localStorage.removeItem('historial_bonos'); // Limpiar datos corruptos
+                    const container = document.getElementById('historial-container');
+                    container.innerHTML = '<div class="card" style="text-align: center; color: #999;">Historial limpiado (datos corruptos)</div>';
+                    return;
+                }
+                
+                // Validar que sea un array
+                if (!Array.isArray(historial)) {
+                    historial = [];
+                }
+                
                 const container = document.getElementById('historial-container');
                 
-                if (data.length === 0) {
+                if (historial.length === 0) {
                     container.innerHTML = '<div class="card" style="text-align: center; color: #999;">Sin simulaciones aún</div>';
                     return;
                 }
 
                 let html = '';
-                data.forEach(item => {
-                    const fecha = new Date(item.fecha_creacion);
-                    const fechaFormato = fecha.toLocaleDateString('es-AR') + ' ' + fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                historial.slice(0, 50).forEach((item) => {
+                    try {
+                        const fecha = new Date(item.fecha);
+                        const fechaFormato = fecha.toLocaleDateString('es-AR') + ' ' + fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-                    // Calcular ganancia por convergencia
-                    const gananciaPariedad = ((100 / item.paridad_dual) - 1) * 100;
-
-                    html += `
-                        <div class="historial-item">
-                            <div class="historial-fecha">📅 ${fechaFormato}</div>
-                            <div class="historial-row">
-                                <div><span class="historial-label">Índice:</span> ${item.dolar_hoy.toFixed(2)} → ${item.dolar_diciembre.toFixed(2)}</div>
-                                <div><span class="historial-label">Mejor:</span> ${item.mejor_opcion}</div>
+                        html += `
+                            <div class="historial-item">
+                                <div class="historial-fecha">📅 ${fechaFormato}</div>
+                                <div class="historial-row">
+                                    <div><span class="historial-label">Índice:</span> ${item.valorIndiceHoy.toFixed(2)} → ${item.valorIndiceProyectado.toFixed(2)}</div>
+                                    <div><span class="historial-label">Mejor:</span> ${item.mejor === 'PR17' ? 'Fijo' : 'Indexado'}</div>
+                                </div>
+                                <div class="historial-row">
+                                    <div><span class="historial-label">Fijo:</span> ${item.rendBonoFijo.toFixed(2)}%</div>
+                                    <div><span class="historial-label">Indexado:</span> ${item.rendBonoIndexado.toFixed(2)}%</div>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <span class="historial-label">Break-Even:</span> ${item.breakeven.toFixed(2)}
+                                </div>
                             </div>
-                            <div class="historial-row">
-                                <div><span class="historial-label">Fijo:</span> ${item.rendimiento_pr17.toFixed(2)}%</div>
-                                <div><span class="historial-label">Indexado:</span> ${item.rendimiento_dual.toFixed(2)}%</div>
-                            </div>
-                            <div style="margin-top: 8px;">
-                                <span class="historial-label">Break-Even:</span> ${item.breakeven_dolar.toFixed(2)}
-                            </div>
-                        </div>
-                    `;
+                        `;
+                    } catch (itemError) {
+                        console.warn('[LocalStorage] Error procesando item:', item, itemError);
+                    }
                 });
 
                 container.innerHTML = html;
-            })
-            .catch(error => {
-                console.error('Error cargando historial:', error);
-            });
+            } catch (error) {
+                console.error('[LocalStorage] Error cargando historial:', error);
+                document.getElementById('historial-container').innerHTML = '<div class="card" style="text-align: center; color: #c62828;">Error cargando historial</div>';
+            }
         }
 
         function resetForm() {
@@ -668,20 +757,40 @@
         }
 
         function descargarDatos() {
-            fetch('/historial')
-            .then(response => response.json())
-            .then(data => {
-                const csv = generarCSV(data);
+            try {
+                const historialJSON = localStorage.getItem('historial_bonos');
+                
+                if (!historialJSON || historialJSON.trim() === '') {
+                    mostrarError('No hay datos para descargar');
+                    return;
+                }
+                
+                let historial = [];
+                try {
+                    historial = JSON.parse(historialJSON);
+                } catch (parseError) {
+                    mostrarError('Datos corruptos en historial');
+                    return;
+                }
+                
+                if (!Array.isArray(historial) || historial.length === 0) {
+                    mostrarError('No hay datos para descargar');
+                    return;
+                }
+                
+                const csv = generarCSV(historial);
                 descargarCSV(csv);
-            })
-            .catch(error => mostrarError('Error al descargar: ' + error.message));
+            } catch (error) {
+                mostrarError('Error al descargar: ' + error.message);
+            }
         }
 
         function generarCSV(data) {
-            let csv = 'Fecha,Valor Índice Hoy,Valor Índice Proyectado,TIR Bono Fijo,Paridad Bono Indexado,Rendimiento Bono Fijo,Rendimiento Bono Indexado,Mejor Opción,Break-Even\n';
+            let csv = 'Fecha,Valor Índice Hoy,Valor Índice Proyectado,TIR Bono Fijo,Paridad Bono Indexado,TIR Adicional,Rendimiento Bono Fijo,Rendimiento Bono Indexado,Mejor Opción,Break-Even\n';
 
             data.forEach(row => {
-                csv += `"${row.fecha_creacion}",${row.dolar_hoy},${row.dolar_diciembre},${row.tir_pr17},${row.paridad_dual},${row.rendimiento_pr17},${row.rendimiento_dual},${row.mejor_opcion},${row.breakeven_dolar}\n`;
+                const fecha = new Date(row.fecha).toISOString();
+                csv += `"${fecha}",${row.valorIndiceHoy},${row.valorIndiceProyectado},${row.tirBonoFijo},${row.paridadBonoIndexado},${row.tirAdicional},${row.rendBonoFijo},${row.rendBonoIndexado},${row.mejor},${row.breakeven}\n`;
             });
 
             return csv;
@@ -728,7 +837,7 @@
         // Registrar Service Worker para PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('./sw.js')
                     .then(function(registration) {
                         console.log('[PWA] Service Worker registrado exitosamente:', registration);
                         
