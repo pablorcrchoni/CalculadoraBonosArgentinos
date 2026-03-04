@@ -1,11 +1,9 @@
-// Service Worker para Calculadora de Bonos
-const CACHE_NAME = 'calculadora-bonos-v1';
+// Service Worker para Calculadora de Bonos (Versión Local - Solo Cliente)
+const CACHE_NAME = 'bonos-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/static/styles.css',
-  '/static/app.js',
-  'https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js'
+  './',
+  './index.html',
+  './manifest.json'
 ];
 
 // Evento de instalación: cachea los recursos
@@ -47,110 +45,53 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Estrategia: Network first, fallback to cache
+// Estrategia: Cache first, fallback to network
+// Para una PWA local, prioriza el caché
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  // Ignorar solicitudes que no sean GET
+  // Solo cachear GET requests
   if (request.method !== 'GET') {
-    event.respondWith(fetch(request));
     return;
   }
 
-  // Para archivos HTML, intenta red primero, fallback a caché
-  if (request.destination === 'document' || request.url.includes('.html')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Actualiza el caché con la respuesta nueva
-          if (response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Si falla la red, intenta servir desde caché
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              console.log('[Service Worker] Sirviendo desde caché:', request.url);
-              return cachedResponse;
-            }
-            // Si no hay caché, devuelve una página de error offline
-            return caches.match('/index.html');
-          });
-        })
-    );
-    return;
-  }
-
-  // Para otros recursos (CSS, JS, imágenes), usa estrategia cache first
   event.respondWith(
     caches.match(request)
-      .then((cachedResponse) => {
-        if (cachedResponse) {
-          // Devuelve desde caché pero intenta actualizar en background
-          fetch(request).then((response) => {
-            if (response.status === 200) {
-              const responseToCache = response.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, responseToCache);
-              });
-            }
-          }).catch(() => {
-            // Fallo silencioso al actualizar
-          });
-          return cachedResponse;
+      .then((response) => {
+        // Si está en caché, devuélvelo
+        if (response) {
+          console.log('[Service Worker] Sirviendo desde caché:', request.url);
+          return response;
         }
 
-        // Si no está en caché, intenta red
+        // Si no está en caché, intenta la red
         return fetch(request)
           .then((response) => {
-            // Cachea la respuesta si es exitosa
-            if (response.status === 200) {
-              const responseToCache = response.clone();
-              caches.open(CACHE_NAME).then((cache) => {
+            // No cachear solicitudes fallidas o POST/PUT/DELETE
+            if (!response || response.status !== 200 || request.method !== 'GET') {
+              return response;
+            }
+
+            // Cachear respuestas exitosas
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME)
+              .then((cache) => {
                 cache.put(request, responseToCache);
               });
-            }
+
             return response;
           })
-          .catch((err) => {
-            console.warn('[Service Worker] Solicitud fallida:', request.url, err);
-            // Si todo falla, devuelve una respuesta de error
-            return new Response('Offline - Recurso no disponible', {
+          .catch(() => {
+            // Si todo falla y es una página HTML, intenta servir index.html
+            if (request.destination === 'document' || request.url.includes('.html')) {
+              return caches.match('./index.html');
+            }
+            // Para otros recursos, devuelve un error offline
+            return new Response('Offline', {
               status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
-              })
+              statusText: 'Service Unavailable'
             });
           });
       })
   );
-});
-
-// Manejo de mensajes desde el cliente
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
-
-// Sincronización en background (cuando vuelve la conectividad)
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-simulaciones') {
-    event.waitUntil(
-      // Aquí podrías sincronizar datos guardados localmente
-      Promise.resolve()
-        .then(() => {
-          console.log('[Service Worker] Sincronización completada');
-        })
-        .catch((err) => {
-          console.error('[Service Worker] Error en sincronización:', err);
-        })
-    );
-  }
 });

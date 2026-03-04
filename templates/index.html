@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Universal de Arbitraje de Bonos</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Calculadora Universal de Arbitraje de Bonos - Compará rendimientos entre bonos fijos e indexados">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Calculadora Bonos">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23667eea' width='192' height='192'/><text x='96' y='120' font-size='80' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central'>💰</text></svg>">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 10px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .label-optional {
+            font-size: 12px;
+            color: #999;
+            font-weight: 400;
+            margin-left: 5px;
+        }
+
+        .label-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            position: relative;
+        }
+
+        .tooltip-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 400;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .tooltip-icon:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 115%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #333;
+            z-index: 1000;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .input-group .form-group {
+            margin-bottom: 0;
+        }
+
+        .input-full {
+            grid-column: 1 / -1;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:hover {
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .results {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-box {
+            padding: 15px;
+            border-left: 5px solid #667eea;
+            background: #f8f9ff;
+            border-radius: 5px;
+            margin-bottom: 12px;
+        }
+
+        .result-label {
+            color: #666;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .comparison-card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .comparison-card.mejor {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            border: 3px solid #2ecc71;
+        }
+
+        .comparison-card.peor {
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+        }
+
+        .comparison-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .comparison-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .breakeven {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .breakeven-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .breakeven-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .historial-section {
+            margin-top: 30px;
+        }
+
+        .historial-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .historial-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 5px solid #667eea;
+            font-size: 13px;
+        }
+
+        .historial-fecha {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .historial-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .historial-valor {
+            color: #333;
+        }
+
+        .historial-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .botones-secundarios {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: white;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .info-section {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #1565c0;
+            line-height: 1.5;
+        }
+
+        .info-section strong {
+            color: #0d47a1;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .formula {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 8px;
+            color: #333;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+            }
+
+            .card {
+                padding: 18px;
+                margin-bottom: 15px;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Calculadora de Arbitraje</h1>
+
+        <div class="card">
+            <h2 style="color: #333; margin-bottom: 20px; font-size: 18px;">Parámetros de Simulación</h2>
+
+            <div class="info-section">
+                <strong>📐 Fórmula de Cálculo</strong>
+                Rendimiento = ((Proyectado/Hoy) - 1) × 100 + ((100/Paridad) - 1) × 100 + TIR Adicional
+                <div class="formula">
+                    Ejemplo: ((1200/1045) - 1) × 100 + ((100/93.5) - 1) × 100 + 0 = 20.48% + 6.95% + 0% = 27.43%
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="valor_indice_hoy">📊 Valor Índice Hoy</label>
+                    <input type="number" id="valor_indice_hoy" placeholder="Ej: 1050" step="0.01" value="1045" required>
+                </div>
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="valor_indice_proyectado">📈 Valor Índice Proyectado</label>
+                        <span class="tooltip-icon" data-tooltip="Para inflación: ingresá 100 hoy y (100 + inflación%) aquí. Ej: 125 si esperás 25%">?</span>
+                    </div>
+                    <input type="number" id="valor_indice_proyectado" placeholder="Ej: 1200" step="0.01" value="1200" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="tir_bono_fijo">💰 TIR Bono Fijo (%)</label>
+                    <input type="number" id="tir_bono_fijo" placeholder="Ej: 45.86" step="0.01" value="45.86" required>
+                </div>
+                <div class="form-group">
+                    <label for="paridad_bono_indexado">💱 Paridad Bono Indexado (%)</label>
+                    <input type="number" id="paridad_bono_indexado" placeholder="Ej: 93.5" step="0.01" value="93.5" required>
+                </div>
+            </div>
+
+            <div class="input-group input-full">
+                <div class="form-group">
+                    <label for="tir_adicional">➕ TIR Adicional del Bono (%) <span class="label-optional">(opcional)</span></label>
+                    <input type="number" id="tir_adicional" placeholder="Ej: 6.5 (para CER+6.5%, dejar en 0 para Dual puro)" step="0.01" value="0">
+                </div>
+            </div>
+
+            <button onclick="calcular()">🚀 Calcular Rendimientos</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Procesando simulación...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+            <div class="success-message" id="success"></div>
+        </div>
+
+        <div class="card results" id="results">
+            <h2 style="color: #333; margin-bottom: 20px; font-size: 18px;">📊 Resultados</h2>
+
+            <div class="comparison">
+                <div class="comparison-card mejor" id="mejor-card">
+                    <div class="comparison-name" id="mejor-nombre">Bono Fijo</div>
+                    <div class="comparison-value" id="mejor-valor">45.86%</div>
+                </div>
+                <div class="comparison-card peor" id="peor-card">
+                    <div class="comparison-name" id="peor-nombre">Bono Indexado</div>
+                    <div class="comparison-value" id="peor-valor">20.00%</div>
+                </div>
+            </div>
+
+            <div class="breakeven">
+                <div class="breakeven-label">💹 Break-Even Valor Índice</div>
+                <div class="breakeven-value" id="breakeven">$1,234.56</div>
+                <div style="font-size: 12px; margin-top: 8px; opacity: 0.9;">
+                    Si el índice llega a este valor, ambos bonos rinden igual
+                </div>
+            </div>
+
+            <div class="result-box">
+                <div class="result-label">Variación Índice Esperada</div>
+                <div class="result-value" id="variacion">+14.64%</div>
+            </div>
+
+            <div class="result-box">
+                <div class="result-label">Ganancia por Convergencia</div>
+                <div class="result-value" id="ganancia-convergencia">6.95%</div>
+            </div>
+
+            <div class="botones-secundarios">
+                <button class="btn-secondary" onclick="resetForm()">🔄 Nueva Simulación</button>
+                <button class="btn-secondary" onclick="descargarDatos()">📥 Descargar Datos</button>
+            </div>
+        </div>
+
+        <div class="historial-section">
+            <div class="historial-title">📋 Últimas Simulaciones</div>
+            <div id="historial-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // Cargar historial al iniciar
+        window.addEventListener('load', function() {
+            cargarHistorial();
+        });
+
+        function calcular() {
+            const valorIndiceHoy = parseFloat(document.getElementById('valor_indice_hoy').value);
+            const valorIndiceProyectado = parseFloat(document.getElementById('valor_indice_proyectado').value);
+            const tirBonoFijo = parseFloat(document.getElementById('tir_bono_fijo').value);
+            const paridadBonoIndexado = parseFloat(document.getElementById('paridad_bono_indexado').value);
+            const tirAdicional = parseFloat(document.getElementById('tir_adicional').value) || 0;
+
+            // Validaciones básicas
+            const errorDiv = document.getElementById('error');
+            errorDiv.classList.remove('active');
+
+            if (!valorIndiceHoy || !valorIndiceProyectado || !tirBonoFijo || !paridadBonoIndexado) {
+                mostrarError('Por favor completa todos los campos requeridos');
+                return;
+            }
+
+            if (valorIndiceHoy <= 0 || valorIndiceProyectado <= 0 || paridadBonoIndexado <= 0) {
+                mostrarError('Los valores deben ser mayores a 0');
+                return;
+            }
+
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('active');
+
+            // Simular latencia de procesamiento (para que se vea real)
+            setTimeout(() => {
+                try {
+                    // LÓGICA DE CÁLCULO LOCAL (sin servidor)
+                    
+                    // 1. Ganancia por convergencia
+                    const gananciaPariedad = ((100 / paridadBonoIndexado) - 1) * 100;
+                    
+                    // 2. Variación del índice
+                    const variacionIndice = ((valorIndiceProyectado / valorIndiceHoy) - 1) * 100;
+                    
+                    // 3. Rendimiento Bono Indexado
+                    const rendBonoIndexado = variacionIndice + gananciaPariedad + tirAdicional;
+                    
+                    // 4. Rendimiento Bono Fijo
+                    const rendBonoFijo = tirBonoFijo;
+                    
+                    // 5. Break-even (despejando valorIndiceProyectado)
+                    // TIR_Fijo = ((valor_proyectado / valor_hoy) - 1) * 100 + ganancia_paridad + tir_adicional
+                    // Despejando: valor_proyectado = valor_hoy * (1 + (tir_fijo - ganancia_paridad - tir_adicional) / 100)
+                    const variacionNecesaria = (rendBonoFijo - gananciaPariedad - tirAdicional) / 100;
+                    const breakeven = valorIndiceHoy * (1 + variacionNecesaria);
+                    
+                    // Determinar cual es mejor
+                    const mejor = rendBonoFijo > rendBonoIndexado ? 'PR17' : 'Dual';
+                    
+                    // Preparar datos para guardar
+                    const simulacion = {
+                        fecha: new Date().toISOString(),
+                        valorIndiceHoy: valorIndiceHoy,
+                        valorIndiceProyectado: valorIndiceProyectado,
+                        tirBonoFijo: tirBonoFijo,
+                        paridadBonoIndexado: paridadBonoIndexado,
+                        tirAdicional: tirAdicional,
+                        rendBonoFijo: rendBonoFijo,
+                        rendBonoIndexado: rendBonoIndexado,
+                        mejor: mejor,
+                        breakeven: breakeven,
+                        variacionIndice: variacionIndice,
+                        gananciaPariedad: gananciaPariedad
+                    };
+                    
+                    // Guardar en localStorage
+                    guardarSimulacionLocal(simulacion);
+                    
+                    document.getElementById('loading').style.display = 'none';
+
+                    // Mostrar resultados en UI
+                    const mejorCard = document.getElementById('mejor-card');
+                    const peorCard = document.getElementById('peor-card');
+
+                    if (mejor === 'PR17') {
+                        mejorCard.classList.add('mejor');
+                        mejorCard.classList.remove('peor');
+                        peorCard.classList.remove('mejor');
+                        peorCard.classList.add('peor');
+
+                        document.getElementById('mejor-nombre').textContent = 'Bono Fijo ✓';
+                        document.getElementById('mejor-valor').textContent = rendBonoFijo.toFixed(2) + '%';
+                        document.getElementById('peor-nombre').textContent = 'Bono Indexado';
+                        document.getElementById('peor-valor').textContent = rendBonoIndexado.toFixed(2) + '%';
+                    } else {
+                        mejorCard.classList.remove('mejor');
+                        mejorCard.classList.add('peor');
+                        peorCard.classList.add('mejor');
+                        peorCard.classList.remove('peor');
+
+                        document.getElementById('mejor-nombre').textContent = 'Bono Indexado ✓';
+                        document.getElementById('mejor-valor').textContent = rendBonoIndexado.toFixed(2) + '%';
+                        document.getElementById('peor-nombre').textContent = 'Bono Fijo';
+                        document.getElementById('peor-valor').textContent = rendBonoFijo.toFixed(2) + '%';
+                    }
+
+                    document.getElementById('breakeven').textContent = breakeven.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('variacion').textContent = (variacionIndice > 0 ? '+' : '') + variacionIndice.toFixed(2) + '%';
+                    document.getElementById('ganancia-convergencia').textContent = gananciaPariedad.toFixed(2) + '%';
+
+                    document.getElementById('results').classList.add('active');
+                    mostrarExito('Simulación calculada y guardada');
+                    cargarHistorial();
+                } catch (error) {
+                    document.getElementById('loading').style.display = 'none';
+                    mostrarError('Error al calcular: ' + error.message);
+                    console.error(error);
+                }
+            }, 500); // Simula latencia de 500ms
+        }
+
+        function guardarSimulacionLocal(simulacion) {
+            try {
+                // Obtener historial actual
+                const historialJSON = localStorage.getItem('historial_bonos');
+                let historial = historialJSON ? JSON.parse(historialJSON) : [];
+                
+                // Agregar nueva simulación al inicio
+                historial.unshift(simulacion);
+                
+                // Mantener máximo 100 simulaciones
+                if (historial.length > 100) {
+                    historial = historial.slice(0, 100);
+                }
+                
+                // Guardar de vuelta
+                localStorage.setItem('historial_bonos', JSON.stringify(historial));
+                console.log('[LocalStorage] Simulación guardada');
+            } catch (error) {
+                console.error('[LocalStorage] Error guardando simulación:', error);
+            }
+        }
+
+        function cargarHistorial() {
+            try {
+                const historialJSON = localStorage.getItem('historial_bonos');
+                const historial = historialJSON ? JSON.parse(historialJSON) : [];
+                const container = document.getElementById('historial-container');
+                
+                if (historial.length === 0) {
+                    container.innerHTML = '<div class="card" style="text-align: center; color: #999;">Sin simulaciones aún</div>';
+                    return;
+                }
+
+                let html = '';
+                historial.slice(0, 50).forEach((item) => {
+                    const fecha = new Date(item.fecha);
+                    const fechaFormato = fecha.toLocaleDateString('es-AR') + ' ' + fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+                    html += `
+                        <div class="historial-item">
+                            <div class="historial-fecha">📅 ${fechaFormato}</div>
+                            <div class="historial-row">
+                                <div><span class="historial-label">Índice:</span> ${item.valorIndiceHoy.toFixed(2)} → ${item.valorIndiceProyectado.toFixed(2)}</div>
+                                <div><span class="historial-label">Mejor:</span> ${item.mejor === 'PR17' ? 'Fijo' : 'Indexado'}</div>
+                            </div>
+                            <div class="historial-row">
+                                <div><span class="historial-label">Fijo:</span> ${item.rendBonoFijo.toFixed(2)}%</div>
+                                <div><span class="historial-label">Indexado:</span> ${item.rendBonoIndexado.toFixed(2)}%</div>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <span class="historial-label">Break-Even:</span> ${item.breakeven.toFixed(2)}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('[LocalStorage] Error cargando historial:', error);
+                document.getElementById('historial-container').innerHTML = '<div class="card" style="text-align: center; color: #c62828;">Error cargando historial</div>';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('valor_indice_hoy').value = '';
+            document.getElementById('valor_indice_proyectado').value = '';
+            document.getElementById('tir_bono_fijo').value = '';
+            document.getElementById('paridad_bono_indexado').value = '';
+            document.getElementById('tir_adicional').value = '0';
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('error').classList.remove('active');
+            document.getElementById('success').classList.remove('active');
+        }
+
+        function descargarDatos() {
+            try {
+                const historialJSON = localStorage.getItem('historial_bonos');
+                const historial = historialJSON ? JSON.parse(historialJSON) : [];
+                
+                if (historial.length === 0) {
+                    mostrarError('No hay datos para descargar');
+                    return;
+                }
+                
+                const csv = generarCSV(historial);
+                descargarCSV(csv);
+            } catch (error) {
+                mostrarError('Error al descargar: ' + error.message);
+            }
+        }
+
+        function generarCSV(data) {
+            let csv = 'Fecha,Valor Índice Hoy,Valor Índice Proyectado,TIR Bono Fijo,Paridad Bono Indexado,TIR Adicional,Rendimiento Bono Fijo,Rendimiento Bono Indexado,Mejor Opción,Break-Even\n';
+
+            data.forEach(row => {
+                const fecha = new Date(row.fecha).toISOString();
+                csv += `"${fecha}",${row.valorIndiceHoy},${row.valorIndiceProyectado},${row.tirBonoFijo},${row.paridadBonoIndexado},${row.tirAdicional},${row.rendBonoFijo},${row.rendBonoIndexado},${row.mejor},${row.breakeven}\n`;
+            });
+
+            return csv;
+        }
+
+        function descargarCSV(csv) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `arbitraje-bonos-${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function mostrarError(mensaje) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = mensaje;
+            errorDiv.classList.add('active');
+            setTimeout(() => errorDiv.classList.remove('active'), 5000);
+        }
+
+        function mostrarExito(mensaje) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = mensaje;
+            successDiv.classList.add('active');
+            setTimeout(() => successDiv.classList.remove('active'), 3000);
+        }
+
+        // Permitir calcular con Enter
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                const activeElement = document.activeElement;
+                if (activeElement.tagName === 'INPUT') {
+                    calcular();
+                }
+            }
+        });
+
+        // Registrar Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function(registration) {
+                        console.log('[PWA] Service Worker registrado exitosamente:', registration);
+                        
+                        // Escuchar actualizaciones disponibles
+                        registration.addEventListener('updatefound', function() {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', function() {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('[PWA] Nueva versión disponible');
+                                    // Mostrar notificación de actualización
+                                    mostrarExito('Actualización disponible. Recarga la página.');
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('[PWA] Error registrando Service Worker:', error);
+                    });
+            });
+        } else {
+            console.warn('[PWA] Service Worker no soportado en este navegador');
+        }
+    </script>
+</body>
+</html>
