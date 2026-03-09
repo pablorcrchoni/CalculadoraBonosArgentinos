@@ -1,8 +1,0 @@
-{
-  "name": "cer-monitor",
-  "version": "1.0.0",
-  "description": "Monitor de bonos CER Argentina",
-  "scripts": {
-    "dev": "vercel dev"
-  }
-}

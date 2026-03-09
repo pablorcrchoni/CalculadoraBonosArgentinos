@@ -1,509 +1,865 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CER Monitor</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
-<style>
-  :root{--bg:#080c10;--surface:#0d1117;--border:#1a2332;--green:#00ff88;--red:#ff3366;--yellow:#ffaa00;--cyan:#00e5ff;--text:#e2e8f0;--muted:#4a5568}
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:12px;min-height:100vh}
-  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(0,255,136,.03) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(255,51,102,.03) 0%,transparent 60%);pointer-events:none;z-index:0}
-  .wrap{max-width:1500px;margin:0 auto;padding:20px;position:relative;z-index:1}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Universal de Arbitraje de Bonos</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Calculadora Universal de Arbitraje de Bonos - Compará rendimientos entre bonos fijos e indexados">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Calculadora Bonos">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23667eea' width='192' height='192'/><text x='96' y='120' font-size='80' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central'>💰</text></svg>">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  /* HEADER */
-  header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:24px;flex-wrap:wrap;gap:12px}
-  .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px}
-  .logo span{color:var(--green)}
-  .hstats{display:flex;gap:20px;flex-wrap:wrap}
-  .hstat label{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
-  .hstat .val{font-size:15px;font-weight:700}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:inline-block;margin-right:5px}
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,.4)}50%{box-shadow:0 0 0 6px rgba(0,255,136,0)}}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 10px;
+        }
 
-  /* TABS */
-  .tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)}
-  .tab{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);padding:10px 20px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;transition:all .2s;margin-bottom:-1px}
-  .tab:hover{color:var(--text)}
-  .tab.active{color:var(--green);border-bottom-color:var(--green)}
-  .tab-content{display:none}
-  .tab-content.active{display:block}
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
 
-  /* CONTROLS */
-  .controls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-  .btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 14px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;transition:all .2s}
-  .btn:hover,.btn.active{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.05)}
-  .btn-refresh{background:var(--green);border:none;color:#000;padding:5px 16px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;transition:all .2s;margin-left:auto}
-  .btn-refresh:hover{background:#00cc6a}
-  .btn-refresh:disabled{background:var(--muted);cursor:not-allowed}
-  .countdown{color:var(--yellow);font-size:10px}
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
 
-  /* THRESHOLDS */
-  .thresholds{background:var(--surface);border:1px solid var(--border);padding:12px 20px;margin-bottom:16px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
-  .thresholds legend{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;color:var(--yellow);text-transform:uppercase;letter-spacing:2px}
-  .tfield label{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
-  .tfield input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:3px 8px;font-family:'Space Mono',monospace;font-size:12px;width:90px}
-  .tfield input:focus{outline:none;border-color:var(--yellow)}
-  .tfield select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:3px 8px;font-family:'Space Mono',monospace;font-size:12px}
-  .tfield select:focus{outline:none;border-color:var(--yellow)}
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
 
-  /* OPP CARDS */
-  .opps{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;min-height:8px}
-  .opp{padding:12px 16px;flex:1;min-width:180px;animation:fadeIn .4s ease}
-  .opp.drop{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25)}
-  .opp.arb{background:rgba(255,170,0,.08);border:1px solid rgba(255,170,0,.25)}
-  .opp.hit{background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.25)}
-  .opp.rot{background:rgba(255,51,102,.08);border:1px solid rgba(255,51,102,.25)}
-  .opp-type{font-size:9px;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
-  .opp.drop .opp-type{color:var(--green)}
-  .opp.arb .opp-type{color:var(--yellow)}
-  .opp.hit .opp-type{color:var(--cyan)}
-  .opp.rot .opp-type{color:var(--red)}
-  .opp-ticker{font-family:'Syne',sans-serif;font-weight:800;font-size:16px}
-  .opp-price{font-weight:700}
-  .opp.drop .opp-price{color:var(--green)}
-  .opp.arb .opp-price{color:var(--yellow)}
-  .opp.rot .opp-price{color:var(--red)}
-  .opp-detail{color:var(--muted);font-size:10px;margin-top:3px;line-height:1.5}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+        .form-group {
+            margin-bottom: 18px;
+        }
 
-  /* SECTION */
-  .sec-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px}
-  .sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
 
-  /* TABLE */
-  table{width:100%;border-collapse:collapse;margin-bottom:28px}
-  th{text-align:left;padding:7px 10px;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
-  th.r{text-align:right}
-  th:hover{color:var(--text)}
-  td{padding:9px 10px;border-bottom:1px solid rgba(26,35,50,.5);white-space:nowrap;transition:background .15s}
-  td.r{text-align:right}
-  tr:hover td{background:rgba(255,255,255,.02)}
-  tr.row-drop td{background:rgba(0,255,136,.07)}
-  tr.row-drop:hover td{background:rgba(0,255,136,.12)}
-  tr.row-arb td{background:rgba(255,170,0,.07)}
-  tr.row-rot td{background:rgba(255,51,102,.06)}
-  tr.row-best td{background:rgba(0,229,255,.06)}
+        .label-optional {
+            font-size: 12px;
+            color: #999;
+            font-weight: 400;
+            margin-left: 5px;
+        }
 
-  .tkr{font-family:'Syne',sans-serif;font-weight:800;font-size:13px}
-  .badge{display:inline-block;padding:1px 5px;font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-left:5px;font-family:'Space Mono',monospace}
-  .b-drop{background:rgba(0,255,136,.15);color:var(--green);border:1px solid rgba(0,255,136,.3)}
-  .b-arb{background:rgba(255,170,0,.15);color:var(--yellow);border:1px solid rgba(255,170,0,.3)}
-  .b-hit{background:rgba(0,229,255,.15);color:var(--cyan);border:1px solid rgba(0,229,255,.3)}
-  .b-sell{background:rgba(255,51,102,.15);color:var(--red);border:1px solid rgba(255,51,102,.3)}
-  .b-buy{background:rgba(0,255,136,.15);color:var(--green);border:1px solid rgba(0,255,136,.3)}
+        .label-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-  .pos{color:var(--green)}.neg{color:var(--red)}.dim{color:var(--muted)}
-  .tir-bar{display:inline-flex;align-items:center;gap:5px}
-  .tir-fill{height:2px;background:var(--green);min-width:2px}
-  .target-inp{background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--yellow);font-family:'Space Mono',monospace;font-size:11px;width:78px;text-align:right;padding:1px 3px}
-  .target-inp:focus{outline:none;border-bottom-color:var(--yellow)}
-  .target-inp.hit{color:var(--cyan);border-bottom-color:var(--cyan)}
+        .tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            position: relative;
+        }
 
-  /* ARB MATRIX */
-  .arb-matrix{overflow-x:auto;margin-bottom:28px}
-  .arb-matrix table{min-width:600px}
-  .arb-matrix td.spread-pos{color:var(--green);font-weight:700}
-  .arb-matrix td.spread-neg{color:var(--red)}
-  .arb-matrix td.spread-neu{color:var(--muted)}
+        .tooltip-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 400;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
 
-  /* ROTATION TABLE */
-  .rot-arrow{color:var(--yellow);font-size:14px;margin:0 4px}
-  .gain-chip{display:inline-block;padding:2px 8px;background:rgba(0,255,136,.15);color:var(--green);border:1px solid rgba(0,255,136,.3);font-size:10px}
-  .gain-chip.high{background:rgba(0,255,136,.25);font-weight:700}
+        .tooltip-icon:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 115%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #333;
+            z-index: 1000;
+        }
 
-  /* COUPON TIMELINE */
-  .timeline{position:relative;padding:8px 0;margin-bottom:28px}
-  .tl-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(26,35,50,.4)}
-  .tl-dot{width:10px;height:10px;border-radius:50%;background:var(--yellow);flex-shrink:0;margin-top:3px}
-  .tl-dot.near{background:var(--green);box-shadow:0 0 6px rgba(0,255,136,.5)}
-  .tl-date{color:var(--muted);font-size:10px;width:80px;flex-shrink:0}
-  .tl-body{flex:1}
-  .tl-ticker{font-family:'Syne',sans-serif;font-weight:800;font-size:13px}
-  .tl-detail{color:var(--muted);font-size:10px;margin-top:2px}
-  .tl-amount{font-size:13px;font-weight:700;color:var(--yellow);text-align:right;flex-shrink:0}
-  .tl-reinvest{font-size:9px;color:var(--green);margin-top:2px}
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
 
-  .loading{text-align:center;padding:60px;color:var(--muted);font-size:11px;letter-spacing:2px}
-  .loading::after{content:'';display:block;width:40px;height:2px;background:var(--green);margin:16px auto 0;animation:ld 1.5s infinite}
-  @keyframes ld{0%{transform:scaleX(.3);opacity:.3}50%{transform:scaleX(1);opacity:1}100%{transform:scaleX(.3);opacity:.3}}
-  .error{color:var(--red);padding:20px;text-align:center;line-height:1.8}
-  .empty{color:var(--muted);padding:16px;font-size:11px}
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
 
-  footer{color:var(--muted);font-size:9px;text-align:center;padding:20px 0;border-top:1px solid var(--border);margin-top:24px;letter-spacing:1px}
-  @media(max-width:600px){header{flex-direction:column;align-items:flex-start}.hstats{gap:12px}table{font-size:11px}th,td{padding:6px 6px}}
-</style>
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .input-group .form-group {
+            margin-bottom: 0;
+        }
+
+        .input-full {
+            grid-column: 1 / -1;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:hover {
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .results {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-box {
+            padding: 15px;
+            border-left: 5px solid #667eea;
+            background: #f8f9ff;
+            border-radius: 5px;
+            margin-bottom: 12px;
+        }
+
+        .result-label {
+            color: #666;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .comparison-card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .comparison-card.mejor {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            border: 3px solid #2ecc71;
+        }
+
+        .comparison-card.peor {
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+        }
+
+        .comparison-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .comparison-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .breakeven {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .breakeven-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .breakeven-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .historial-section {
+            margin-top: 30px;
+        }
+
+        .historial-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .historial-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 5px solid #667eea;
+            font-size: 13px;
+        }
+
+        .historial-fecha {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .historial-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .historial-valor {
+            color: #333;
+        }
+
+        .historial-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .botones-secundarios {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: white;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .info-section {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #1565c0;
+            line-height: 1.5;
+        }
+
+        .info-section strong {
+            color: #0d47a1;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .formula {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 8px;
+            color: #333;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+            }
+
+            .card {
+                padding: 18px;
+                margin-bottom: 15px;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <div class="logo">CER<span>·</span>MONITOR</div>
-      <div style="color:var(--muted);font-size:9px;letter-spacing:2px;margin-top:3px">BONOS SOBERANOS ARGENTINA · DÓLAR MEP</div>
+    <div class="container">
+        <h1>🎯 Calculadora de Arbitraje</h1>
+
+        <div class="card">
+            <h2 style="color: #333; margin-bottom: 20px; font-size: 18px;">Parámetros de Simulación</h2>
+
+            <div class="info-section">
+                <strong>📐 Fórmula de Cálculo</strong>
+                Rendimiento = ((Proyectado/Hoy) - 1) × 100 + ((100/Paridad) - 1) × 100 + TIR Adicional
+                <div class="formula">
+                    Ejemplo: ((1200/1045) - 1) × 100 + ((100/93.5) - 1) × 100 + 0 = 20.48% + 6.95% + 0% = 27.43%
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="valor_indice_hoy">📊 Valor Índice Hoy</label>
+                    <input type="number" id="valor_indice_hoy" placeholder="Ej: 1050" step="0.01" value="1045" required>
+                </div>
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="valor_indice_proyectado">📈 Valor Índice Proyectado</label>
+                        <span class="tooltip-icon" data-tooltip="Para inflación: ingresá 100 hoy y (100 + inflación%) aquí. Ej: 125 si esperás 25%">?</span>
+                    </div>
+                    <input type="number" id="valor_indice_proyectado" placeholder="Ej: 1200" step="0.01" value="1200" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="tir_bono_fijo">💰 TIR Bono Fijo (%)</label>
+                    <input type="number" id="tir_bono_fijo" placeholder="Ej: 45.86" step="0.01" value="45.86" required>
+                </div>
+                <div class="form-group">
+                    <label for="paridad_bono_indexado">💱 Paridad Bono Indexado (%)</label>
+                    <input type="number" id="paridad_bono_indexado" placeholder="Ej: 93.5" step="0.01" value="93.5" required>
+                </div>
+            </div>
+
+            <div class="input-group input-full">
+                <div class="form-group">
+                    <label for="tir_adicional">➕ TIR Adicional del Bono (%) <span class="label-optional">(opcional)</span></label>
+                    <input type="number" id="tir_adicional" placeholder="Ej: 6.5 (para CER+6.5%, dejar en 0 para Dual puro)" step="0.01" value="0">
+                </div>
+            </div>
+
+            <button onclick="calcular()">🚀 Calcular Rendimientos</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Procesando simulación...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+            <div class="success-message" id="success"></div>
+        </div>
+
+        <div class="card results" id="results">
+            <h2 style="color: #333; margin-bottom: 20px; font-size: 18px;">📊 Resultados</h2>
+
+            <div class="comparison">
+                <div class="comparison-card mejor" id="mejor-card">
+                    <div class="comparison-name" id="mejor-nombre">Bono Fijo</div>
+                    <div class="comparison-value" id="mejor-valor">45.86%</div>
+                </div>
+                <div class="comparison-card peor" id="peor-card">
+                    <div class="comparison-name" id="peor-nombre">Bono Indexado</div>
+                    <div class="comparison-value" id="peor-valor">20.00%</div>
+                </div>
+            </div>
+
+            <div class="breakeven">
+                <div class="breakeven-label">💹 Break-Even Valor Índice</div>
+                <div class="breakeven-value" id="breakeven">$1,234.56</div>
+                <div style="font-size: 12px; margin-top: 8px; opacity: 0.9;">
+                    Si el índice llega a este valor, ambos bonos rinden igual
+                </div>
+            </div>
+
+            <div class="result-box">
+                <div class="result-label">Variación Índice Esperada</div>
+                <div class="result-value" id="variacion">+14.64%</div>
+            </div>
+
+            <div class="result-box">
+                <div class="result-label">Ganancia por Convergencia</div>
+                <div class="result-value" id="ganancia-convergencia">6.95%</div>
+            </div>
+
+            <div class="botones-secundarios">
+                <button class="btn-secondary" onclick="resetForm()">🔄 Nueva Simulación</button>
+                <button class="btn-secondary" onclick="descargarDatos()">📥 Descargar Datos</button>
+            </div>
+        </div>
+
+        <div class="historial-section">
+            <div class="historial-title">📋 Últimas Simulaciones</div>
+            <div id="historial-container"></div>
+        </div>
     </div>
-    <div class="hstats">
-      <div class="hstat"><label>MEP</label><div class="val" id="h-mep" style="color:var(--yellow)">—</div></div>
-      <div class="hstat"><label>Actualizado</label><div class="val" id="h-time" style="font-size:12px;color:var(--muted)">—</div></div>
-      <div class="hstat"><label>Estado</label><div class="val"><span class="dot"></span><span id="h-status">Cargando</span></div></div>
-      <div class="hstat" style="margin-left:8px">
-        <button class="btn-refresh" id="btn-ref" onclick="loadData()">↻ Actualizar</button>
-      </div>
-      <div class="hstat"><label>Auto</label><div class="val countdown"><span id="cd">60</span>s</div></div>
-    </div>
-  </header>
 
-  <!-- TABS -->
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('monitor',this)">📊 Monitor</button>
-    <button class="tab" onclick="switchTab('arbitraje',this)">⚡ Arbitraje</button>
-    <button class="tab" onclick="switchTab('cupones',this)">📅 Cupones</button>
-  </div>
+    <script>
+        // Cargar historial al iniciar
+        window.addEventListener('load', function() {
+            cargarHistorial();
+        });
 
-  <!-- TAB: MONITOR -->
-  <div id="tab-monitor" class="tab-content active">
-    <div class="controls">
-      <button class="btn active" onclick="setFilter('todos',this)">Todos</button>
-      <button class="btn" onclick="setFilter('opps',this)">⚡ Oportunidades</button>
-    </div>
-    <div class="thresholds">
-      <span class="tfield"><legend>⚡ Umbrales</legend></span>
-      <div class="tfield"><label>Caída mín (%)</label><input type="number" id="t-drop" value="2" min="0.5" max="20" step="0.5" onchange="renderAll()"></div>
-      <div class="tfield"><label>Spread ARB (%)</label><input type="number" id="t-arb" value="1.5" min="0.5" max="10" step="0.5" onchange="renderAll()"></div>
-      <div class="tfield"><label>TIR mín USD (%)</label><input type="number" id="t-tir" value="7" min="1" max="20" step="0.5" onchange="renderAll()"></div>
-    </div>
-    <div class="opps" id="opps"></div>
-    <div id="content"><div class="loading">Cargando datos de mercado</div></div>
-  </div>
+        function calcular() {
+            const valorIndiceHoy = parseFloat(document.getElementById('valor_indice_hoy').value);
+            const valorIndiceProyectado = parseFloat(document.getElementById('valor_indice_proyectado').value);
+            const tirBonoFijo = parseFloat(document.getElementById('tir_bono_fijo').value);
+            const paridadBonoIndexado = parseFloat(document.getElementById('paridad_bono_indexado').value);
+            const tirAdicional = parseFloat(document.getElementById('tir_adicional').value) || 0;
 
-  <!-- TAB: ARBITRAJE -->
-  <div id="tab-arbitraje" class="tab-content">
-    <div class="thresholds">
-      <span class="tfield"><legend>⚙ Config</legend></span>
-      <div class="tfield"><label>TIR mín diferencia (%)</label><input type="number" id="arb-min-tir" value="1" min="0.1" max="10" step="0.1" onchange="renderArb()"></div>
-      <div class="tfield"><label>Spread MEP/ARS mín (%)</label><input type="number" id="arb-min-spread" value="1" min="0.1" max="10" step="0.1" onchange="renderArb()"></div>
-      <div class="tfield"><label>Filtro vencimiento</label>
-        <select id="arb-vto" onchange="renderArb()">
-          <option value="todos">Todos</option>
-          <option value="2026">Hasta 2026</option>
-          <option value="pre-electoral" selected>Pre-electoral (< Oct 2027)</option>
-          <option value="2028">Hasta 2028</option>
-        </select>
-      </div>
-    </div>
-    <div id="arb-content"><div class="loading">Cargando arbitrajes</div></div>
-  </div>
+            // Validaciones básicas
+            const errorDiv = document.getElementById('error');
+            errorDiv.classList.remove('active');
 
-  <!-- TAB: CUPONES -->
-  <div id="tab-cupones" class="tab-content">
-    <div id="cup-content"><div class="loading">Cargando cupones</div></div>
-  </div>
-</div>
-<footer>data912.com · Solo informativo · No constituye asesoramiento financiero</footer>
+            if (!valorIndiceHoy || !valorIndiceProyectado || !tirBonoFijo || !paridadBonoIndexado) {
+                mostrarError('Por favor completa todos los campos requeridos');
+                return;
+            }
 
-<script>
-// ── DATOS DE CUPONES Y AMORTIZACIONES (hardcoded, fuente BYMA) ────────────
-const CUPONES = [
-  {symbol:'TX26',  fecha:'2026-05-09', renta:0.004,  amor:0.20, tipo:'CER'},
-  {symbol:'TX26',  fecha:'2026-11-09', renta:0.002,  amor:0.20, tipo:'CER'},
-  {symbol:'TX28',  fecha:'2026-05-09', renta:0.00225,amor:0.00, tipo:'CER'},
-  {symbol:'TX28',  fecha:'2026-11-09', renta:0.00225,amor:0.00, tipo:'CER'},
-  {symbol:'TX28',  fecha:'2027-05-09', renta:0.00225,amor:0.00, tipo:'CER'},
-  {symbol:'TX28',  fecha:'2027-11-09', renta:0.00225,amor:0.00, tipo:'CER'},
-  {symbol:'TX28',  fecha:'2028-05-09', renta:0.00225,amor:0.50, tipo:'CER'},
-  {symbol:'TX28',  fecha:'2028-11-09', renta:0.00225,amor:0.50, tipo:'CER'},
-  {symbol:'TX31',  fecha:'2026-05-30', renta:0.025,  amor:0.00, tipo:'CER'},
-  {symbol:'TX31',  fecha:'2026-11-30', renta:0.025,  amor:0.00, tipo:'CER'},
-  {symbol:'TX31',  fecha:'2027-05-30', renta:0.025,  amor:0.00, tipo:'CER'},
-  {symbol:'TX31',  fecha:'2027-11-30', renta:0.025,  amor:0.00, tipo:'CER'},
-  {symbol:'TZX26', fecha:'2026-06-30', renta:0.00,   amor:1.00, tipo:'CER'},
-  {symbol:'TZX27', fecha:'2027-06-30', renta:0.00,   amor:1.00, tipo:'CER'},
-  {symbol:'TZX28', fecha:'2028-06-30', renta:0.00,   amor:1.00, tipo:'CER'},
-  {symbol:'TZXO6', fecha:'2026-10-30', renta:0.00,   amor:1.00, tipo:'CER'},
-  {symbol:'TZXD6', fecha:'2026-12-15', renta:0.00,   amor:1.00, tipo:'CER'},
-  {symbol:'TZXM7', fecha:'2027-03-31', renta:0.00,   amor:1.00, tipo:'CER'},
-  {symbol:'TZXD7', fecha:'2027-12-15', renta:0.00,   amor:1.00, tipo:'CER'},
-];
+            if (valorIndiceHoy <= 0 || valorIndiceProyectado <= 0 || paridadBonoIndexado <= 0) {
+                mostrarError('Los valores deben ser mayores a 0');
+                return;
+            }
 
-// Vencimientos para filtro pre-electoral
-const VENCIMIENTOS = {
-  'TX26':1085,'TX26D':1085,'TX28':1950,'TX28D':1950,'TX31':2922,'TX31D':2922,
-  'TZX26':480,'TZX27':845,'TZX28':1210,'TZXO6':600,'TZXD6':660,
-  'TZXM7':750,'TZXD7':1025,'TZV27':845,
-};
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('active');
 
-// Pre-electoral = vence antes del 27/10/2027 (~900 dias desde hoy ~mar 2026)
-function pasaFiltroVto(symbol, filtro) {
-  const dias = VENCIMIENTOS[symbol] || 9999;
-  if(filtro==='todos') return true;
-  if(filtro==='2026') return dias <= 365;
-  if(filtro==='pre-electoral') return dias <= 900;
-  if(filtro==='2028') return dias <= 1095;
-  return true;
-}
+            // Simular latencia de procesamiento (para que se vea real)
+            setTimeout(() => {
+                try {
+                    // LÓGICA DE CÁLCULO LOCAL (sin servidor)
+                    
+                    // 1. Ganancia por convergencia
+                    const gananciaPariedad = ((100 / paridadBonoIndexado) - 1) * 100;
+                    
+                    // 2. Variación del índice
+                    const variacionIndice = ((valorIndiceProyectado / valorIndiceHoy) - 1) * 100;
+                    
+                    // 3. Rendimiento Bono Indexado
+                    const rendBonoIndexado = variacionIndice + gananciaPariedad + tirAdicional;
+                    
+                    // 4. Rendimiento Bono Fijo
+                    const rendBonoFijo = tirBonoFijo;
+                    
+                    // 5. Break-even (despejando valorIndiceProyectado)
+                    const variacionNecesaria = (rendBonoFijo - gananciaPariedad - tirAdicional) / 100;
+                    const breakeven = valorIndiceHoy * (1 + variacionNecesaria);
+                    
+                    // Determinar cual es mejor
+                    const mejor = rendBonoFijo > rendBonoIndexado ? 'PR17' : 'Dual';
+                    
+                    // Preparar datos para guardar
+                    const simulacion = {
+                        fecha: new Date().toISOString(),
+                        valorIndiceHoy: valorIndiceHoy,
+                        valorIndiceProyectado: valorIndiceProyectado,
+                        tirBonoFijo: tirBonoFijo,
+                        paridadBonoIndexado: paridadBonoIndexado,
+                        tirAdicional: tirAdicional,
+                        rendBonoFijo: rendBonoFijo,
+                        rendBonoIndexado: rendBonoIndexado,
+                        mejor: mejor,
+                        breakeven: breakeven,
+                        variacionIndice: variacionIndice,
+                        gananciaPariedad: gananciaPariedad
+                    };
+                    
+                    // Guardar en localStorage
+                    guardarSimulacionLocal(simulacion);
+                    
+                    document.getElementById('loading').style.display = 'none';
 
-// ── CONFIG ────────────────────────────────────────────────────────────────
-const BONOS_D   = ['TX31D','TX28D','TX26D','TZX8D','TZX7D','TZX6D'];
-const BONOS_ARS = ['TX31','TX28','TX26','TZX28','TZX27','TZX26','TZXD7','TZXD6','TZXM7','TZXO6','TZV27'];
-const TARGETS_KEY = 'cer_targets';
+                    // Mostrar resultados en UI
+                    const mejorCard = document.getElementById('mejor-card');
+                    const peorCard = document.getElementById('peor-card');
 
-// ── STATE ─────────────────────────────────────────────────────────────────
-let mepBonds=[], arsBonds=[], mepRate=0;
-let filter='todos';
-let targets=JSON.parse(localStorage.getItem(TARGETS_KEY)||'{}');
-let cdVal=60, cdInterval;
-let activeTab='monitor';
+                    if (mejor === 'PR17') {
+                        mejorCard.classList.add('mejor');
+                        mejorCard.classList.remove('peor');
+                        peorCard.classList.remove('mejor');
+                        peorCard.classList.add('peor');
 
-// ── TABS ──────────────────────────────────────────────────────────────────
-function switchTab(tab, btn) {
-  activeTab = tab;
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('tab-'+tab).classList.add('active');
-  if(tab==='arbitraje') renderArb();
-  if(tab==='cupones') renderCupones();
-}
+                        document.getElementById('mejor-nombre').textContent = 'Bono Fijo ✓';
+                        document.getElementById('mejor-valor').textContent = rendBonoFijo.toFixed(2) + '%';
+                        document.getElementById('peor-nombre').textContent = 'Bono Indexado';
+                        document.getElementById('peor-valor').textContent = rendBonoIndexado.toFixed(2) + '%';
+                    } else {
+                        mejorCard.classList.remove('mejor');
+                        mejorCard.classList.add('peor');
+                        peorCard.classList.add('mejor');
+                        peorCard.classList.remove('peor');
 
-// ── FETCH ─────────────────────────────────────────────────────────────────
-async function loadData() {
-  const btn=document.getElementById('btn-ref');
-  btn.disabled=true; btn.textContent='↻ Cargando...';
-  document.getElementById('h-status').textContent='Actualizando';
-  try {
-    const res = await fetch('/api/market');
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const {mep,bonds,notes} = await res.json();
-    const mepArr = Array.isArray(mep)?mep:[];
-    mepRate = mepArr.length ? mepArr.reduce((a,b)=>a+(parseFloat(b.close)||0),0)/mepArr.length : 0;
-    const all = [...(bonds||[]),...(notes||[])];
+                        document.getElementById('mejor-nombre').textContent = 'Bono Indexado ✓';
+                        document.getElementById('mejor-valor').textContent = rendBonoIndexado.toFixed(2) + '%';
+                        document.getElementById('peor-nombre').textContent = 'Bono Fijo';
+                        document.getElementById('peor-valor').textContent = rendBonoFijo.toFixed(2) + '%';
+                    }
 
-    mepBonds = all.filter(b=>BONOS_D.includes(b.symbol)).map(b=>({
-      symbol:b.symbol, precio:parseFloat(b.c)||0,
-      var_pct:parseFloat(b.pct_change)||0,
-      tir:parseFloat(b.tir||0)*100,
-      volumen:parseInt(b.v||0),
-      bid:parseFloat(b.px_bid)||null,
-      ask:parseFloat(b.px_ask)||null,
-    })).map(b=>({...b,spread:(b.bid&&b.ask)?+((b.ask-b.bid)/b.bid*100).toFixed(3):null}));
+                    document.getElementById('breakeven').textContent = breakeven.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('variacion').textContent = (variacionIndice > 0 ? '+' : '') + variacionIndice.toFixed(2) + '%';
+                    document.getElementById('ganancia-convergencia').textContent = gananciaPariedad.toFixed(2) + '%';
 
-    arsBonds = all.filter(b=>BONOS_ARS.includes(b.symbol)).map(b=>({
-      symbol:b.symbol, precio_ars:parseFloat(b.c)||0,
-      var_pct:parseFloat(b.pct_change)||0,
-      tir:parseFloat(b.tir||0)*100,
-      volumen:parseInt(b.v||0),
-      impl_usd:mepRate?+(parseFloat(b.c)/mepRate).toFixed(5):null,
-    })).map(b=>{
-      const mepB=mepBonds.find(m=>m.symbol===b.symbol+'D');
-      const delta=(mepB&&b.impl_usd)?+((b.impl_usd-mepB.precio)/mepB.precio*100).toFixed(2):null;
-      return {...b,delta};
-    });
+                    document.getElementById('results').classList.add('active');
+                    mostrarExito('Simulación calculada y guardada');
+                    cargarHistorial();
+                } catch (error) {
+                    document.getElementById('loading').style.display = 'none';
+                    mostrarError('Error al calcular: ' + error.message);
+                    console.error(error);
+                }
+            }, 500);
+        }
 
-    document.getElementById('h-mep').textContent=mepRate?'$'+mepRate.toFixed(0):'—';
-    document.getElementById('h-time').textContent=new Date().toLocaleTimeString('es-AR');
-    document.getElementById('h-status').textContent='En vivo';
-    resetCountdown();
-    if(activeTab==='monitor') renderAll();
-    else if(activeTab==='arbitraje') renderArb();
-    else if(activeTab==='cupones') renderCupones();
-  } catch(e) {
-    document.getElementById('content').innerHTML='<div class="error">⚠ '+e.message+'<br><small style="color:var(--muted)">Reintentá en unos segundos</small></div>';
-    document.getElementById('h-status').textContent='Error';
-  }
-  btn.disabled=false; btn.textContent='↻ Actualizar';
-}
+        function guardarSimulacionLocal(simulacion) {
+            try {
+                // Validar que la simulación tenga los campos requeridos
+                if (!simulacion || typeof simulacion !== 'object') {
+                    console.error('[LocalStorage] Simulación inválida:', simulacion);
+                    return;
+                }
+                
+                let historial = [];
+                const historialJSON = localStorage.getItem('historial_bonos');
+                
+                // Intentar parsear el historial existente
+                if (historialJSON && historialJSON.trim() !== '') {
+                    try {
+                        historial = JSON.parse(historialJSON);
+                    } catch (parseError) {
+                        console.warn('[LocalStorage] Historial corrupto, iniciando de cero:', parseError);
+                        historial = [];
+                    }
+                }
+                
+                // Validar que sea un array
+                if (!Array.isArray(historial)) {
+                    historial = [];
+                }
+                
+                // Agregar nueva simulación al inicio
+                historial.unshift(simulacion);
+                
+                // Mantener máximo 100 simulaciones
+                if (historial.length > 100) {
+                    historial = historial.slice(0, 100);
+                }
+                
+                // Guardar de forma segura
+                try {
+                    localStorage.setItem('historial_bonos', JSON.stringify(historial));
+                    console.log('[LocalStorage] Simulación guardada correctamente. Total simulaciones:', historial.length);
+                } catch (storageError) {
+                    console.error('[LocalStorage] Error guardando en localStorage:', storageError);
+                    if (storageError.name === 'QuotaExceededError') {
+                        console.warn('[LocalStorage] Cuota excedida, limpiando datos antiguos...');
+                        historial = historial.slice(0, 50);
+                        localStorage.setItem('historial_bonos', JSON.stringify(historial));
+                    }
+                }
+            } catch (error) {
+                console.error('[LocalStorage] Error guardando simulación:', error);
+            }
+        }
 
-// ── MONITOR ───────────────────────────────────────────────────────────────
-function getOpps() {
-  const dropT=+document.getElementById('t-drop').value;
-  const arbT=+document.getElementById('t-arb').value;
-  const opps={drop:[],arb:[],hit:[]};
-  mepBonds.forEach(b=>{
-    if(b.var_pct<=-dropT) opps.drop.push(b);
-    const t=targets[b.symbol];
-    if(t&&b.precio<=parseFloat(t)) opps.hit.push(b);
-  });
-  arsBonds.forEach(b=>{if(b.delta!==null&&Math.abs(b.delta)>=arbT) opps.arb.push(b);});
-  return opps;
-}
+        function cargarHistorial() {
+            try {
+                const historialJSON = localStorage.getItem('historial_bonos');
+                
+                // Si no hay datos o está vacío, mostrar mensaje
+                if (!historialJSON || historialJSON.trim() === '') {
+                    const container = document.getElementById('historial-container');
+                    container.innerHTML = '<div class="card" style="text-align: center; color: #999;">Sin simulaciones aún</div>';
+                    return;
+                }
+                
+                // Parsear JSON de forma segura
+                let historial = [];
+                try {
+                    historial = JSON.parse(historialJSON);
+                } catch (parseError) {
+                    console.error('[LocalStorage] Error parseando JSON:', parseError);
+                    console.warn('[LocalStorage] Contenido corrupto:', historialJSON.substring(0, 100));
+                    localStorage.removeItem('historial_bonos'); // Limpiar datos corruptos
+                    const container = document.getElementById('historial-container');
+                    container.innerHTML = '<div class="card" style="text-align: center; color: #999;">Historial limpiado (datos corruptos)</div>';
+                    return;
+                }
+                
+                // Validar que sea un array
+                if (!Array.isArray(historial)) {
+                    historial = [];
+                }
+                
+                const container = document.getElementById('historial-container');
+                
+                if (historial.length === 0) {
+                    container.innerHTML = '<div class="card" style="text-align: center; color: #999;">Sin simulaciones aún</div>';
+                    return;
+                }
 
-function setFilter(f,btn) {
-  filter=f;
-  document.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderAll();
-}
+                let html = '';
+                historial.slice(0, 50).forEach((item) => {
+                    try {
+                        const fecha = new Date(item.fecha);
+                        const fechaFormato = fecha.toLocaleDateString('es-AR') + ' ' + fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-function renderAll() {
-  const opps=getOpps();
-  const dropSet=new Set(opps.drop.map(b=>b.symbol));
-  const arbSet=new Set(opps.arb.map(b=>b.symbol));
-  const hitSet=new Set(opps.hit.map(b=>b.symbol));
-  document.getElementById('opps').innerHTML=opps.drop.map(b=>
-    '<div class="opp drop"><div class="opp-type">⚡ Bono en oferta</div><div class="opp-ticker">'+b.symbol+' <span class="opp-price">'+b.precio.toFixed(5)+'</span></div><div class="opp-detail">Cayó '+b.var_pct.toFixed(2)+'% hoy</div></div>'
-  ).concat(opps.arb.map(b=>
-    '<div class="opp arb"><div class="opp-type">⇄ Arbitraje MEP/ARS</div><div class="opp-ticker">'+b.symbol+' <span class="opp-price">'+(b.impl_usd||'')+'</span></div><div class="opp-detail">Δ '+(b.delta>0?'+':'')+b.delta.toFixed(2)+'% vs MEP</div></div>'
-  )).concat(opps.hit.map(b=>
-    '<div class="opp hit"><div class="opp-type">✅ Target alcanzado</div><div class="opp-ticker">'+b.symbol+' <span class="opp-price">'+b.precio.toFixed(5)+'</span></div><div class="opp-detail">Tu target: '+parseFloat(targets[b.symbol]).toFixed(5)+'</div></div>'
-  )).join('');
+                        html += `
+                            <div class="historial-item">
+                                <div class="historial-fecha">📅 ${fechaFormato}</div>
+                                <div class="historial-row">
+                                    <div><span class="historial-label">Índice:</span> ${item.valorIndiceHoy.toFixed(2)} → ${item.valorIndiceProyectado.toFixed(2)}</div>
+                                    <div><span class="historial-label">Mejor:</span> ${item.mejor === 'PR17' ? 'Fijo' : 'Indexado'}</div>
+                                </div>
+                                <div class="historial-row">
+                                    <div><span class="historial-label">Fijo:</span> ${item.rendBonoFijo.toFixed(2)}%</div>
+                                    <div><span class="historial-label">Indexado:</span> ${item.rendBonoIndexado.toFixed(2)}%</div>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <span class="historial-label">Break-Even:</span> ${item.breakeven.toFixed(2)}
+                                </div>
+                            </div>
+                        `;
+                    } catch (itemError) {
+                        console.warn('[LocalStorage] Error procesando item:', item, itemError);
+                    }
+                });
 
-  let mb=mepBonds, ab=arsBonds;
-  if(filter==='opps'){
-    mb=mb.filter(b=>dropSet.has(b.symbol)||arbSet.has(b.symbol.slice(0,-1))||hitSet.has(b.symbol));
-    ab=ab.filter(b=>arbSet.has(b.symbol));
-  }
-  document.getElementById('content').innerHTML=renderMepTable(mb,dropSet,arbSet,hitSet)+renderArsTable(ab,arbSet);
-}
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('[LocalStorage] Error cargando historial:', error);
+                document.getElementById('historial-container').innerHTML = '<div class="card" style="text-align: center; color: #c62828;">Error cargando historial</div>';
+            }
+        }
 
-function renderMepTable(bonds,dropSet,arbSet,hitSet) {
-  if(!bonds.length) return '<div class="sec-title">Bonos CER · Dólar MEP</div><div class="empty">'+(mepBonds.length?'Sin oportunidades activas':'Sin datos — presioná Actualizar')+'</div>';
-  const rows=bonds.map(b=>{
-    const isDrop=dropSet.has(b.symbol),isArb=arbSet.has(b.symbol.slice(0,-1)),isHit=hitSet.has(b.symbol);
-    const tgt=targets[b.symbol]||'';
-    const rowCls=isDrop?'row-drop':isArb?'row-arb':'';
-    const badges=(isDrop?'<span class="badge b-drop">Oferta</span>':'')+(isArb?'<span class="badge b-arb">ARB</span>':'')+(isHit?'<span class="badge b-hit">Target</span>':'');
-    const tirW=Math.min((b.tir/15)*50,50);
-    return '<tr class="'+rowCls+'"><td><span class="tkr">'+b.symbol+'</span>'+badges+'</td><td class="r">'+b.precio.toFixed(5)+'</td><td class="r '+(b.var_pct>0?'pos':b.var_pct<0?'neg':'dim')+'">'+(b.var_pct>0?'+':'')+b.var_pct.toFixed(2)+'%</td><td class="r"><div class="tir-bar"><div class="tir-fill" style="width:'+tirW+'px"></div>'+(b.tir?b.tir.toFixed(2)+'%':'—')+'</div></td><td class="r">'+b.volumen.toLocaleString('es-AR')+'</td><td class="r dim">'+(b.bid?b.bid.toFixed(5):'—')+'</td><td class="r dim">'+(b.ask?b.ask.toFixed(5):'—')+'</td><td class="r '+(b.spread>2?'neg':'pos')+'">'+(b.spread!==null?b.spread.toFixed(3)+'%':'—')+'</td><td class="r"><input class="target-inp '+(isHit?'hit':'')+'" type="number" step="0.00001" value="'+tgt+'" placeholder="0.00000" onchange="saveTarget(\''+b.symbol+'\',this.value)"></td></tr>';
-  }).join('');
-  return '<div class="sec-title">Bonos CER · Dólar MEP</div><table><thead><tr><th>Ticker</th><th class="r">Precio USD</th><th class="r">Var%</th><th class="r">TIR</th><th class="r">Volumen</th><th class="r">Bid</th><th class="r">Ask</th><th class="r">Spread</th><th class="r">Mi Target</th></tr></thead><tbody>'+rows+'</tbody></table>';
-}
+        function resetForm() {
+            document.getElementById('valor_indice_hoy').value = '';
+            document.getElementById('valor_indice_proyectado').value = '';
+            document.getElementById('tir_bono_fijo').value = '';
+            document.getElementById('paridad_bono_indexado').value = '';
+            document.getElementById('tir_adicional').value = '0';
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('error').classList.remove('active');
+            document.getElementById('success').classList.remove('active');
+        }
 
-function renderArsTable(bonds,arbSet) {
-  if(!bonds.length) return '<div class="sec-title">Bonos CER · Pesos ARS</div><div class="empty">'+(arsBonds.length?'Sin arbitrajes activos':'Sin datos')+'</div>';
-  const rows=bonds.map(b=>{
-    const isArb=arbSet.has(b.symbol);
-    return '<tr class="'+(isArb?'row-arb':'')+'"><td><span class="tkr">'+b.symbol+'</span>'+(isArb?'<span class="badge b-arb">ARB</span>':'')+'</td><td class="r">'+b.precio_ars.toFixed(2)+'</td><td class="r dim">'+(b.impl_usd?b.impl_usd.toFixed(5):'—')+'</td><td class="r '+(b.var_pct>0?'pos':b.var_pct<0?'neg':'dim')+'">'+(b.var_pct>0?'+':'')+b.var_pct.toFixed(2)+'%</td><td class="r">'+(b.tir?b.tir.toFixed(2)+'%':'—')+'</td><td class="r">'+b.volumen.toLocaleString('es-AR')+'</td><td class="r '+(b.delta>0?'pos':b.delta<0?'neg':'dim')+'">'+(b.delta!==null?(b.delta>0?'+':'')+b.delta.toFixed(2)+'%':'—')+'</td></tr>';
-  }).join('');
-  return '<div class="sec-title">Bonos CER · Pesos ARS</div><table><thead><tr><th>Ticker</th><th class="r">Precio ARS</th><th class="r">Implícito USD</th><th class="r">Var%</th><th class="r">TIR</th><th class="r">Volumen</th><th class="r">Δ vs MEP</th></tr></thead><tbody>'+rows+'</tbody></table>';
-}
+        function descargarDatos() {
+            try {
+                const historialJSON = localStorage.getItem('historial_bonos');
+                
+                if (!historialJSON || historialJSON.trim() === '') {
+                    mostrarError('No hay datos para descargar');
+                    return;
+                }
+                
+                let historial = [];
+                try {
+                    historial = JSON.parse(historialJSON);
+                } catch (parseError) {
+                    mostrarError('Datos corruptos en historial');
+                    return;
+                }
+                
+                if (!Array.isArray(historial) || historial.length === 0) {
+                    mostrarError('No hay datos para descargar');
+                    return;
+                }
+                
+                const csv = generarCSV(historial);
+                descargarCSV(csv);
+            } catch (error) {
+                mostrarError('Error al descargar: ' + error.message);
+            }
+        }
 
-function saveTarget(ticker,val){targets[ticker]=val;localStorage.setItem(TARGETS_KEY,JSON.stringify(targets));renderAll();}
+        function generarCSV(data) {
+            let csv = 'Fecha,Valor Índice Hoy,Valor Índice Proyectado,TIR Bono Fijo,Paridad Bono Indexado,TIR Adicional,Rendimiento Bono Fijo,Rendimiento Bono Indexado,Mejor Opción,Break-Even\n';
 
-// ── ARBITRAJE ─────────────────────────────────────────────────────────────
-function renderArb() {
-  const minTir  = +document.getElementById('arb-min-tir').value;
-  const minSpread = +document.getElementById('arb-min-spread').value;
-  const vtoFiltro = document.getElementById('arb-vto').value;
+            data.forEach(row => {
+                const fecha = new Date(row.fecha).toISOString();
+                csv += `"${fecha}",${row.valorIndiceHoy},${row.valorIndiceProyectado},${row.tirBonoFijo},${row.paridadBonoIndexado},${row.tirAdicional},${row.rendBonoFijo},${row.rendBonoIndexado},${row.mejor},${row.breakeven}\n`;
+            });
 
-  if(!arsBonds.length && !mepBonds.length) {
-    document.getElementById('arb-content').innerHTML='<div class="empty">Sin datos — presioná Actualizar</div>';
-    return;
-  }
+            return csv;
+        }
 
-  // 1. ROTACION POR TIR
-  const allBonds = [
-    ...arsBonds.filter(b=>pasaFiltroVto(b.symbol,vtoFiltro)).map(b=>({...b,moneda:'ARS',precio_display:b.precio_ars.toFixed(2)})),
-    ...mepBonds.filter(b=>pasaFiltroVto(b.symbol,vtoFiltro)).map(b=>({...b,moneda:'USD',precio_display:b.precio.toFixed(5)})),
-  ].filter(b=>b.tir>0).sort((a,b)=>b.tir-a.tir);
+        function descargarCSV(csv) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
 
-  let rotRows='';
-  // Generar pares VENDO (baja TIR) -> COMPRO (alta TIR)
-  const rotPairs=[];
-  for(let i=allBonds.length-1;i>=0;i--) {
-    for(let j=0;j<i;j++) {
-      const sell=allBonds[i], buy=allBonds[j];
-      const diff=buy.tir-sell.tir;
-      if(diff>=minTir && sell.moneda===buy.moneda) {
-        rotPairs.push({sell,buy,diff});
-      }
-    }
-  }
-  rotPairs.sort((a,b)=>b.diff-a.diff).slice(0,10).forEach(p=>{
-    const chipCls=p.diff>=3?'gain-chip high':'gain-chip';
-    rotRows+='<tr class="row-rot"><td><span class="tkr">'+p.sell.symbol+'</span><span class="badge b-sell">Vender</span></td><td class="r dim">'+p.sell.precio_display+'</td><td class="r neg">'+p.sell.tir.toFixed(2)+'%</td><td style="text-align:center"><span class="rot-arrow">→</span></td><td><span class="tkr">'+p.buy.symbol+'</span><span class="badge b-buy">Comprar</span></td><td class="r dim">'+p.buy.precio_display+'</td><td class="r pos">'+p.buy.tir.toFixed(2)+'%</td><td class="r"><span class="'+chipCls+'">+'+p.diff.toFixed(2)+'%</span></td><td class="r dim">'+p.sell.moneda+'</td></tr>';
-  });
+            link.setAttribute('href', url);
+            link.setAttribute('download', `arbitraje-bonos-${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
 
-  // 2. ARB MEP vs ARS
-  let arbRows='';
-  arsBonds.filter(b=>b.delta!==null&&Math.abs(b.delta)>=minSpread&&pasaFiltroVto(b.symbol,vtoFiltro)).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)).forEach(b=>{
-    const mepB=mepBonds.find(m=>m.symbol===b.symbol+'D');
-    const accion=b.delta>0?'Comprar '+b.symbol+'D + Vender '+b.symbol:'Comprar '+b.symbol+' + Vender '+b.symbol+'D';
-    arbRows+='<tr class="row-arb"><td><span class="tkr">'+b.symbol+'</span></td><td class="r">'+b.precio_ars.toFixed(2)+'</td><td class="r dim">'+(b.impl_usd?b.impl_usd.toFixed(5):'—')+'</td><td class="r">'+(mepB?mepB.precio.toFixed(5):'—')+'</td><td class="r '+(b.delta>0?'pos':'neg')+'">'+(b.delta>0?'+':'')+b.delta.toFixed(2)+'%</td><td class="dim" style="font-size:10px">'+accion+'</td></tr>';
-  });
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
-  let html='';
+        function mostrarError(mensaje) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = mensaje;
+            errorDiv.classList.add('active');
+            setTimeout(() => errorDiv.classList.remove('active'), 5000);
+        }
 
-  // Sección 1: Rotación
-  html+='<div class="sec-title">Rotación por TIR — Misma moneda</div>';
-  if(rotRows) {
-    html+='<div style="color:var(--muted);font-size:10px;margin-bottom:10px">Vendés el bono de menor TIR y comprás el de mayor TIR. Sin comisión = ganancia pura.</div>';
-    html+='<table><thead><tr><th>Vendés</th><th class="r">Precio</th><th class="r">TIR actual</th><th></th><th>Comprás</th><th class="r">Precio</th><th class="r">TIR nueva</th><th class="r">Ganancia TIR</th><th class="r">Moneda</th></tr></thead><tbody>'+rotRows+'</tbody></table>';
-  } else {
-    html+='<div class="empty">Sin rotaciones con diferencia ≥ '+minTir+'% para el filtro seleccionado</div>';
-  }
+        function mostrarExito(mensaje) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = mensaje;
+            successDiv.classList.add('active');
+            setTimeout(() => successDiv.classList.remove('active'), 3000);
+        }
 
-  // Sección 2: ARB MEP vs ARS
-  html+='<div class="sec-title">Arbitraje MEP vs ARS — Mismo bono distinta especie</div>';
-  if(arbRows) {
-    html+='<div style="color:var(--muted);font-size:10px;margin-bottom:10px">Spread entre precio ARS/MEP y precio directo USD. Δ positivo = ARS más caro que USD → conviene comprar USD.</div>';
-    html+='<table><thead><tr><th>Bono</th><th class="r">Precio ARS</th><th class="r">Implícito USD</th><th class="r">Precio MEP</th><th class="r">Spread</th><th>Operación sugerida</th></tr></thead><tbody>'+arbRows+'</tbody></table>';
-  } else {
-    html+='<div class="empty">Sin arbitrajes con spread ≥ '+minSpread+'% para el filtro seleccionado</div>';
-  }
+        // Permitir calcular con Enter
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                const activeElement = document.activeElement;
+                if (activeElement.tagName === 'INPUT') {
+                    calcular();
+                }
+            }
+        });
 
-  document.getElementById('arb-content').innerHTML=html;
-}
-
-// ── CUPONES ───────────────────────────────────────────────────────────────
-function renderCupones() {
-  if(!arsBonds.length) {
-    document.getElementById('cup-content').innerHTML='<div class="empty">Sin datos — presioná Actualizar</div>';
-    return;
-  }
-  const hoy=new Date();
-  const preciosARS=Object.fromEntries(arsBonds.map(b=>[b.symbol,b.precio_ars]));
-
-  // Próximos 12 meses
-  const proximos=CUPONES.filter(c=>{
-    const f=new Date(c.fecha);
-    const diffDias=(f-hoy)/86400000;
-    return diffDias>0 && diffDias<=365;
-  }).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
-
-  // Mejores destinos de reinversión pre-electoral
-  const reinversionOpts=arsBonds.filter(b=>pasaFiltroVto(b.symbol,'pre-electoral')&&b.tir>0).sort((a,b)=>b.tir-a.tir).slice(0,3);
-
-  let html='<div class="sec-title">Próximos Cupones y Amortizaciones — 12 meses</div>';
-
-  if(!proximos.length) {
-    html+='<div class="empty">Sin cupones en los próximos 12 meses para los bonos monitoreados</div>';
-  } else {
-    html+='<div class="timeline">';
-    proximos.forEach(c=>{
-      const f=new Date(c.fecha);
-      const diffDias=Math.round((f-hoy)/86400000);
-      const near=diffDias<=60;
-      const precio=preciosARS[c.symbol]||0;
-      const flujoNominal=precio*(c.renta+c.amor);
-      const fechaStr=f.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
-      const reinvStr=reinversionOpts.length?'→ Reinvertir en '+reinversionOpts[0].symbol+' (TIR '+reinversionOpts[0].tir.toFixed(2)+'%)':'';
-      html+='<div class="tl-item"><div class="tl-dot'+(near?' near':'')+'"></div><div class="tl-date">'+fechaStr+'<br><span style="color:var(--muted);font-size:9px">en '+diffDias+'d</span></div><div class="tl-body"><div class="tl-ticker">'+c.symbol+(near?' <span class="badge b-drop">Próximo</span>':'')+'</div><div class="tl-detail">'+(c.renta>0?'Renta: '+(c.renta*100).toFixed(3)+'% ':'')+(c.amor>0?'Amort: '+(c.amor*100).toFixed(0)+'%':'')+'</div>'+(reinvStr?'<div class="tl-reinvest">'+reinvStr+'</div>':'')+'</div><div class="tl-amount">'+(flujoNominal>0?'$'+flujoNominal.toFixed(2)+'/nominal':'—')+'</div></div>';
-    });
-    html+='</div>';
-  }
-
-  // Tabla mejores destinos de reinversión
-  html+='<div class="sec-title">Mejores destinos de reinversión — Pre-electoral</div>';
-  const reinvRows=arsBonds.filter(b=>pasaFiltroVto(b.symbol,'pre-electoral')&&b.tir>0).sort((a,b)=>b.tir-a.tir).map(b=>{
-    const dias=VENCIMIENTOS[b.symbol]||0;
-    const vtoDate=new Date(hoy.getTime()+dias*86400000).toLocaleDateString('es-AR',{month:'short',year:'numeric'});
-    return '<tr class="'+(b.tir>=6?'row-best':'')+'"><td><span class="tkr">'+b.symbol+'</span></td><td class="r">'+b.precio_ars.toFixed(2)+'</td><td class="r pos">'+b.tir.toFixed(2)+'%</td><td class="r dim">'+vtoDate+'</td><td class="r dim">'+b.volumen.toLocaleString('es-AR')+'</td></tr>';
-  }).join('');
-  html+='<table><thead><tr><th>Bono</th><th class="r">Precio ARS</th><th class="r">TIR</th><th class="r">Vencimiento</th><th class="r">Volumen</th></tr></thead><tbody>'+reinvRows+'</tbody></table>';
-
-  document.getElementById('cup-content').innerHTML=html;
-}
-
-// ── UTILS ─────────────────────────────────────────────────────────────────
-function resetCountdown(){
-  clearInterval(cdInterval); cdVal=60;
-  cdInterval=setInterval(()=>{
-    document.getElementById('cd').textContent=--cdVal;
-    if(cdVal<=0) loadData();
-  },1000);
-}
-
-loadData();
-</script>
+        // Registrar Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function(registration) {
+                        console.log('[PWA] Service Worker registrado exitosamente:', registration);
+                        
+                        // Escuchar actualizaciones disponibles
+                        registration.addEventListener('updatefound', function() {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', function() {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('[PWA] Nueva versión disponible');
+                                    // Mostrar notificación de actualización
+                                    mostrarExito('Actualización disponible. Recarga la página.');
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('[PWA] Error registrando Service Worker:', error);
+                    });
+            });
+        } else {
+            console.warn('[PWA] Service Worker no soportado en este navegador');
+        }
+    </script>
 </body>
 </html>
